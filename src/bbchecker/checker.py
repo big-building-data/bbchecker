@@ -45,13 +45,16 @@ class Checker:
 
     def is_api_reachable(self):
         # check overall api
-        url = f'{self.base_url}/info'
-        if requests.get(url).status_code != 200:
-            raise CheckerError('API unreachable', [f'upon querying {pre(url)}'])
-        # check input api
-        url = f'{self.base_url}/objects/values'
-        if requests.get(url).status_code == 404:
-            raise CheckerError('input endpoint returns 404', f'upon querying {pre(url)}')
+        try:
+            r = requests.get(f'{self.base_url}/info')
+            if r.status_code != 200:
+                raise CheckerError('API', [f'got status code {r.status_code}', f'upon querying {pre(r.url)}'])
+            # check input api
+            r = requests.get(f'{self.base_url}/objects/values')
+            if r.status_code == 404:
+                raise CheckerError('input endpoint returns 404', f'upon querying {pre(r.url)}')
+        except requests.exceptions.ConnectionError:
+            raise CheckerError('API unreachable', [f'using base URL {pre(self.base_url)}'])
 
     def is_flink_running(self):
         if self.config.has_option('flink', 'script'):

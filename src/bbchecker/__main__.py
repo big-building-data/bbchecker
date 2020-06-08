@@ -1,5 +1,7 @@
 import argparse
 
+from pytgbot.exceptions import TgApiServerException
+
 from bbchecker import *
 
 
@@ -17,25 +19,36 @@ def main():
         checker = Checker(config)
 
         if bot.running:
+            messages = []
             # test API
             try:
                 checker.is_api_reachable()
                 checker.is_ingestion_working()
             except CheckerError as e:
-                bot.send_message(e.telegram())
+                messages.append(e.telegram())
 
             # test flink
             try:
                 checker.is_flink_running()
             except CheckerError as e:
-                bot.send_message(e.telegram())
+                messages.append(e.telegram())
+
+            if len(messages):
+                bot.send_message('\n\n'.join(messages))
         else:
             print('bot not running')
 
-    except Exception as e:
+    except TgApiServerException as e:
+        print(f'Telegram error')
+        if hasattr(e, 'request'):
+            print(f'While fetching {e.request.url}.\nIs it the proper API key ? And chat id ?')
+        print('Details:', e)
+        exit(1)
+
+    except BaseException as e:
         if bot is not None:
-            bot.send_message(pre(str(e)))
-        print(e)
+            bot.send_message('Unknown error\n' + pre(str(e)))
+        print('Error:', e)
         exit(1)
 
 
