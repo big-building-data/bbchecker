@@ -29,3 +29,6 @@ venv
 # IDEs
 .idea
 .vscode
+
+# Other
+config.ini
