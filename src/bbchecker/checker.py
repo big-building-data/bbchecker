@@ -85,7 +85,7 @@ class Checker:
             comment='bbchecker'
         )
         # submit measure
-        r = requests.post(f'{self.base_url}/objects/values', json=measure)
+        r = requests.post(f'{self.base_url}/objects/values', json=[measure])
 
         if r.status_code != 200:
             raise CheckerError(
