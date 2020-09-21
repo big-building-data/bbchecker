@@ -46,7 +46,7 @@ class Checker:
     def is_api_reachable(self):
         # check overall api
         try:
-            r = requests.get(f'{self.base_url}/info')
+            r = requests.get(f'{self.base_url}/about')
             if r.status_code != 200:
                 raise CheckerError('API', [f'got status code {r.status_code}', f'upon querying {pre(r.url)}'])
             # check input api
