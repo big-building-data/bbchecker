@@ -73,12 +73,20 @@ __bot__ section:
 __bbdata__ section:
 
 - `url`: the base url of the bbdata apis, for example https://bbdata.daplab.ch
+- `hostname`: optional, the host header to set (useful when we need to access a load balancer such as nginx through an ip)
+- `verify`: optional, whether or not to check ssl certificate
 - `bbuser` and `bbtoken`: the authentication used to connect to the output api (see `bbdata/output-api`)
 
 __flink__ section:
 
-- `script`: the path to the `run-hadoop.sh` shell script (see [flink-aggregations](https://github.com/big-building-data/flink-aggregations)).
-If not present, the flink status test is skipped.
+- `script`: the path to an executable script that outputs the running flink aggregations. If not present, the flink status test is skipped.
+
+Example script:
+```bash
+#!/usr/bin/env bash
+
+ssh machine-where-flink-task-manager-runs "source ~/.bashrc &&  flink list 2>&1 | grep -E '[0-9a-f]{32}' || true"
+```
 
 __input__ section:
 

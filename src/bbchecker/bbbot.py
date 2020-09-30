@@ -13,15 +13,15 @@ class BBBot:
     def __init__(self, config: Config):
         """Create a bot using the config. Required keys: bot.key, bot.running, bot.chat_id, bot.offset"""
         self.config = config
-        self.running = config.get('bot', 'running') == 'True'
+        self.running = config['bot'].getboolean('running', True)
 
-        self._bot = Bot(config.get('bot', 'key'))
-        self._chat_id = int(config.get('bot', 'chat_id'))
+        self._bot = Bot(config['bot'].get('key'))
+        self._chat_id = config['bot'].getint('chat_id', 0)
 
         self.consume_messages()
 
     def consume_messages(self):
-        offset = int(self.config.get('bot', 'offset'))
+        offset = self.config['bot'].getint('offset', 0)
         for msg in self._bot.do('getUpdates', offset=offset, request_timeout=100):
             if 'channel_post' in msg and msg['channel_post']['chat']['id'] == self._chat_id \
                     and 'text' in msg['channel_post']:

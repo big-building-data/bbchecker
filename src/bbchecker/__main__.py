@@ -4,6 +4,9 @@ from pytgbot.exceptions import TgApiServerException
 
 from bbchecker import *
 
+# suppress InsecureRequestWarning: Unverified HTTPS request is being made [...] when verify=False
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def main():
     # parse arguments
@@ -44,6 +47,9 @@ def main():
             print(f'While fetching {e.request.url}.\nIs it the proper API key ? And chat id ?')
         print('Details:', e)
         exit(1)
+
+    except KeyboardInterrupt:
+        pass
 
     except BaseException as e:
         if bot is not None:

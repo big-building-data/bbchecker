@@ -38,7 +38,22 @@ class Checker:
 
     def __init__(self, config: ConfigParser):
         self.config = config
-        self.base_url = config.get('bbdata', 'url')
+        self.base_url = config['bbdata'].get('url')
+
+        # setup requests headers and auth
+        self.session = requests.Session()
+        self.session.auth = ( config['bbdata'].get('bbuser'),  config['bbdata'].get('bbtoken'))
+
+        headers = {
+            'Content-Type': 'application/json',
+            'accepts': 'application/json',
+        }
+        hostname =  config['bbdata'].get('hostname', '').strip()
+        if len(hostname) > 0:
+            headers['hostname'] = hostname
+        self.session.headers.update(headers)
+
+        self.session.verify = self.config['bbdata'].getboolean('verify', len(hostname) == 0)
 
         if self.base_url.endswith('/'):
             self.base_url = self.base_url[0:-1]
@@ -46,13 +61,9 @@ class Checker:
     def is_api_reachable(self):
         # check overall api
         try:
-            r = requests.get(f'{self.base_url}/about')
+            r = self.session.get(f'{self.base_url}/about')
             if r.status_code != 200:
                 raise CheckerError('API', [f'got status code {r.status_code}', f'upon querying {pre(r.url)}'])
-            # check input api
-            r = requests.get(f'{self.base_url}/objects/values')
-            if r.status_code == 404:
-                raise CheckerError('input endpoint returns 404', f'upon querying {pre(r.url)}')
         except requests.exceptions.ConnectionError:
             raise CheckerError('API unreachable', [f'using base URL {pre(self.base_url)}'])
 
@@ -70,8 +81,8 @@ class Checker:
                 if len(jobs) != 2:
                     raise CheckerError('flink', [f'expecting two running jobs, got {len(jobs)}', pre(output)])
 
-            except Exception as e:
-                raise CheckerError(f'flink', [f'{script} subprocess raised exception', pre(str(e))])
+            except FileNotFoundError as e:
+                raise CheckerError(f'flink', ['invalid script file (<i>not found</i>)', pre(script)])
 
     def is_ingestion_working(self):
         oid, ts = self.config.get('input', 'object_id'), datetime.utcnow().isoformat()
@@ -85,7 +96,7 @@ class Checker:
             comment='bbchecker'
         )
         # submit measure
-        r = requests.post(f'{self.base_url}/objects/values', json=[measure])
+        r = self.session.post(f'{self.base_url}/objects/values', json=[measure])
 
         if r.status_code != 200:
             raise CheckerError(
@@ -93,10 +104,7 @@ class Checker:
                 ["measure:", pre(json.dumps(measure)), "answer:", pre(r.text)])
 
         # get measure
-        r = requests.get(
-            f'{self.base_url}//objects/{oid}/values',
-            params={'from': ts, 'to': ts},
-            headers=dict(bbuser=self.config.get('bbdata', 'bbuser'), bbtoken=self.config.get('bbdata', 'bbtoken')))
+        r = self.session.get(f'{self.base_url}/objects/{oid}/values', params={'from': ts, 'to': ts})
 
         if r.status_code != 200:
             raise CheckerError(f'new measure GET failed with status code {r.status_code}', pre(r.text))

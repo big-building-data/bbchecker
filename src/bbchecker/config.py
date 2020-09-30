@@ -5,7 +5,8 @@ _REQUIRED_SECTIONS = ['bbdata', 'bot', 'flink', 'input']
 
 class Config(ConfigParser):
     def __init__(self, filepath):
-        super().__init__()
+        # trick to keep comments on write, see https://stackoverflow.com/a/52306763
+        super().__init__(comment_prefixes='⟶', allow_no_value=True)
 
         self._filepath = filepath
         self.read(filepath)
